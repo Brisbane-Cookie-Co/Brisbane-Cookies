@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: cookies
+    description: Cookie menu
+  - name: delivery
+    description: Brisbane service zones
+  - name: orders
+    description: Checkout and order tracking
 paths:
   /healthz:
     get:
@@ -24,6 +30,107 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /cookies:
+    get:
+      operationId: listCookies
+      tags: [cookies]
+      summary: List available cookies
+      responses:
+        "200":
+          description: Current cookie menu
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cookie"
+  /delivery-zones:
+    get:
+      operationId: listDeliveryZones
+      tags: [delivery]
+      summary: List supported Brisbane suburbs and fees
+      responses:
+        "200":
+          description: Supported delivery and pickup suburbs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryZone"
+  /delivery-zones/check:
+    get:
+      operationId: checkDeliveryZone
+      tags: [delivery]
+      summary: Check whether a suburb is within the delivery area
+      parameters:
+        - name: suburb
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Delivery coverage result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryCheck"
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order using simulated checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid order or insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Suburb not in service area or cookie not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /orders/{orderNumber}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Retrieve order details and live status
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order tracking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +140,106 @@ components:
           type: string
       required:
         - status
+    Cookie:
+      type: object
+      required: [id, name, slug, description, priceCents, stock, tags, imageUrl, featured]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        priceCents: { type: integer }
+        stock: { type: integer }
+        tags:
+          type: array
+          items: { type: string }
+        imageUrl: { type: string }
+        featured: { type: boolean }
+    DeliveryZone:
+      type: object
+      required: [id, suburb, postcode, standardFeeCents, expressFeeCents, pickupAvailable]
+      properties:
+        id: { type: integer }
+        suburb: { type: string }
+        postcode: { type: string }
+        standardFeeCents: { type: integer }
+        expressFeeCents: { type: integer }
+        pickupAvailable: { type: boolean }
+    DeliveryCheck:
+      type: object
+      required: [serviceable, suburb, zone]
+      properties:
+        serviceable: { type: boolean }
+        suburb: { type: ["string", "null"] }
+        zone:
+          anyOf:
+            - $ref: "#/components/schemas/DeliveryZone"
+            - type: "null"
+    OrderItemInput:
+      type: object
+      required: [cookieId, quantity]
+      properties:
+        cookieId: { type: integer }
+        quantity: { type: integer, minimum: 1 }
+    OrderInput:
+      type: object
+      required: [customerName, email, phone, suburb, fulfillment, items]
+      properties:
+        customerName: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        phone: { type: string, minLength: 5 }
+        suburb: { type: string, minLength: 1 }
+        streetAddress: { type: string }
+        fulfillment:
+          type: string
+          enum: [delivery, pickup]
+        speed:
+          type: string
+          enum: [standard, express]
+          default: standard
+        boxSize:
+          type: ["integer", "null"]
+          enum: [4, 6, 12, null]
+        giftNote: { type: string, maxLength: 240 }
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+    OrderItem:
+      type: object
+      required: [cookieId, name, quantity, unitPriceCents]
+      properties:
+        cookieId: { type: integer }
+        name: { type: string }
+        quantity: { type: integer }
+        unitPriceCents: { type: integer }
+    Order:
+      type: object
+      required: [id, orderNumber, customerName, email, phone, suburb, fulfillment, speed, status, items, subtotalCents, gstCents, deliveryFeeCents, totalCents, giftNote, createdAt]
+      properties:
+        id: { type: integer }
+        orderNumber: { type: string }
+        customerName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        suburb: { type: string }
+        fulfillment: { type: string, enum: [delivery, pickup] }
+        speed: { type: string, enum: [standard, express] }
+        status: { type: string, enum: [received, baking, out_for_delivery, delivered] }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        subtotalCents: { type: integer }
+        gstCents: { type: integer }
+        deliveryFeeCents: { type: integer }
+        totalCents: { type: integer }
+        giftNote: { type: string }
+        createdAt: { type: string, format: date-time }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
 

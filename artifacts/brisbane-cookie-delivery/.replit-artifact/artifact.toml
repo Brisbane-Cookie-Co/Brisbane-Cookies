@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Brisbane Cookie Co."
+description = "A mobile-first cookie delivery storefront for Brisbane with a live cookie menu, build-your-own boxes, suburb delivery and pickup options, simulated checkout, and order tracking."
+version = "1.0.0"
+id = "artifacts/brisbane-cookie-delivery"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23834
+
+[services.development]
+run = "pnpm --filter @workspace/brisbane-cookie-delivery run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/brisbane-cookie-delivery", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/brisbane-cookie-delivery/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23834"
+BASE_PATH = "/"
