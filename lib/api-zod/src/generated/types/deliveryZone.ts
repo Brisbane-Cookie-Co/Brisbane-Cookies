@@ -12,5 +12,6 @@ export interface DeliveryZone {
   postcode: string;
   standardFeeCents: number;
   expressFeeCents: number;
+  minimumOrderCents: number;
   pickupAvailable: boolean;
 }

@@ -5,10 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderItemSelection } from './orderItemSelection';
 
 export interface OrderItem {
   cookieId: number;
   name: string;
   quantity: number;
   unitPriceCents: number;
+  selections: OrderItemSelection[];
 }

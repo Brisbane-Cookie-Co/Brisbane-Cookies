@@ -1,7 +1,10 @@
 import { createInsertSchema } from "drizzle-zod";
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 import { cookiesTable } from "./cookies";
+
+export type OrderItemSelection = { name: string; value: string };
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
@@ -34,6 +37,7 @@ export const orderItemsTable = pgTable("order_items", {
   name: text("name").notNull(),
   quantity: integer("quantity").notNull(),
   unitPriceCents: integer("unit_price_cents").notNull(),
+  selections: jsonb("selections").$type<OrderItemSelection[]>().notNull().default(sql`'[]'::jsonb`),
 });
 
 export const insertOrderSchema = createInsertSchema(ordersTable).omit({

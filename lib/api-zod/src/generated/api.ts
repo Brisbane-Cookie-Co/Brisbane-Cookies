@@ -35,6 +35,65 @@ export const ListCookiesResponse = zod.array(ListCookiesResponseItem)
 
 
 /**
+ * @summary List active products, optionally filtered by category
+ */
+export const ListProductsQueryParams = zod.object({
+  "category": zod.coerce.string().optional()
+})
+
+export const listProductsResponseOptionsItemNameMax = 80;
+
+export const listProductsResponseOptionsItemChoicesItemMax = 100;
+
+export const listProductsResponseOptionsItemChoicesMax = 20;
+
+
+
+export const ListProductsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "priceCents": zod.number().int(),
+  "stock": zod.number().int(),
+  "tags": zod.array(zod.string()),
+  "imageUrl": zod.string(),
+  "featured": zod.boolean(),
+  "active": zod.boolean(),
+  "options": zod.array(zod.object({
+  "name": zod.string().min(1).max(listProductsResponseOptionsItemNameMax),
+  "choices": zod.array(zod.string().min(1).max(listProductsResponseOptionsItemChoicesItemMax)).min(1).max(listProductsResponseOptionsItemChoicesMax),
+  "required": zod.boolean()
+}))
+})
+export const ListProductsResponse = zod.array(ListProductsResponseItem)
+
+
+/**
+ * @summary List available product categories
+ */
+export const ListProductCategoriesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string()
+})
+export const ListProductCategoriesResponse = zod.array(ListProductCategoriesResponseItem)
+
+
+/**
+ * @summary Get public store branding and availability
+ */
+export const GetStoreSettingsResponse = zod.object({
+  "storeName": zod.string(),
+  "primaryColor": zod.string(),
+  "heroAnnouncement": zod.string(),
+  "storeOpen": zod.boolean(),
+  "closureMessage": zod.string()
+})
+
+
+/**
  * @summary List supported Brisbane suburbs and fees
  */
 export const ListDeliveryZonesResponseItem = zod.object({
@@ -43,6 +102,7 @@ export const ListDeliveryZonesResponseItem = zod.object({
   "postcode": zod.string(),
   "standardFeeCents": zod.number().int(),
   "expressFeeCents": zod.number().int(),
+  "minimumOrderCents": zod.number().int(),
   "pickupAvailable": zod.boolean()
 })
 export const ListDeliveryZonesResponse = zod.array(ListDeliveryZonesResponseItem)
@@ -67,6 +127,7 @@ export const CheckDeliveryZoneResponse = zod.object({
   "postcode": zod.string(),
   "standardFeeCents": zod.number().int(),
   "expressFeeCents": zod.number().int(),
+  "minimumOrderCents": zod.number().int(),
   "pickupAvailable": zod.boolean()
 }),zod.null()])
 })
@@ -83,6 +144,8 @@ export const createOrderBodySpeedDefault = `standard`;
 export const createOrderBodyGiftNoteMax = 240;
 
 
+export const createOrderBodyItemsItemSelectionsMax = 10;
+
 
 
 
@@ -98,7 +161,11 @@ export const CreateOrderBody = zod.object({
   "giftNote": zod.string().max(createOrderBodyGiftNoteMax).optional(),
   "items": zod.array(zod.object({
   "cookieId": zod.number().int(),
-  "quantity": zod.number().int().min(1)
+  "quantity": zod.number().int().min(1),
+  "selections": zod.array(zod.object({
+  "name": zod.string(),
+  "value": zod.string()
+})).max(createOrderBodyItemsItemSelectionsMax).optional()
 })).min(1)
 })
 
@@ -109,14 +176,19 @@ export const CreateOrderResponse = zod.object({
   "email": zod.string(),
   "phone": zod.string(),
   "suburb": zod.string(),
+  "streetAddress": zod.string(),
   "fulfillment": zod.enum(['delivery', 'pickup']),
   "speed": zod.enum(['standard', 'express']),
-  "status": zod.enum(['received', 'baking', 'out_for_delivery', 'delivered']),
+  "status": zod.enum(['received', 'baking', 'ready_for_courier', 'out_for_delivery', 'delivered']),
   "items": zod.array(zod.object({
   "cookieId": zod.number().int(),
   "name": zod.string(),
   "quantity": zod.number().int(),
-  "unitPriceCents": zod.number().int()
+  "unitPriceCents": zod.number().int(),
+  "selections": zod.array(zod.object({
+  "name": zod.string(),
+  "value": zod.string()
+}))
 })),
   "subtotalCents": zod.number().int(),
   "gstCents": zod.number().int(),
@@ -141,14 +213,19 @@ export const GetOrderResponse = zod.object({
   "email": zod.string(),
   "phone": zod.string(),
   "suburb": zod.string(),
+  "streetAddress": zod.string(),
   "fulfillment": zod.enum(['delivery', 'pickup']),
   "speed": zod.enum(['standard', 'express']),
-  "status": zod.enum(['received', 'baking', 'out_for_delivery', 'delivered']),
+  "status": zod.enum(['received', 'baking', 'ready_for_courier', 'out_for_delivery', 'delivered']),
   "items": zod.array(zod.object({
   "cookieId": zod.number().int(),
   "name": zod.string(),
   "quantity": zod.number().int(),
-  "unitPriceCents": zod.number().int()
+  "unitPriceCents": zod.number().int(),
+  "selections": zod.array(zod.object({
+  "name": zod.string(),
+  "value": zod.string()
+}))
 })),
   "subtotalCents": zod.number().int(),
   "gstCents": zod.number().int(),
@@ -157,5 +234,539 @@ export const GetOrderResponse = zod.object({
   "giftNote": zod.string(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Check the admin session
+ */
+export const GetAdminSessionResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * @summary Verify the admin access code
+ */
+export const loginAdminBodyAccessCodeMax = 256;
+
+
+
+export const LoginAdminBody = zod.object({
+  "accessCode": zod.string().min(1).max(loginAdminBodyAccessCodeMax)
+})
+
+export const LoginAdminResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * @summary End the current admin session
+ */
+export const LogoutAdminResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * @summary List all products, including hidden ones
+ */
+export const listAdminProductsResponseOptionsItemNameMax = 80;
+
+export const listAdminProductsResponseOptionsItemChoicesItemMax = 100;
+
+export const listAdminProductsResponseOptionsItemChoicesMax = 20;
+
+
+
+export const ListAdminProductsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "priceCents": zod.number().int(),
+  "stock": zod.number().int(),
+  "tags": zod.array(zod.string()),
+  "imageUrl": zod.string(),
+  "featured": zod.boolean(),
+  "active": zod.boolean(),
+  "options": zod.array(zod.object({
+  "name": zod.string().min(1).max(listAdminProductsResponseOptionsItemNameMax),
+  "choices": zod.array(zod.string().min(1).max(listAdminProductsResponseOptionsItemChoicesItemMax)).min(1).max(listAdminProductsResponseOptionsItemChoicesMax),
+  "required": zod.boolean()
+}))
+})
+export const ListAdminProductsResponse = zod.array(ListAdminProductsResponseItem)
+
+
+/**
+ * @summary Create a product
+ */
+export const createAdminProductBodyNameMax = 120;
+
+export const createAdminProductBodyDescriptionMax = 1000;
+
+
+export const createAdminProductBodyPriceCentsMin = 0;
+export const createAdminProductBodyPriceCentsMax = 1000000;
+
+export const createAdminProductBodyStockMin = 0;
+export const createAdminProductBodyStockMax = 100000;
+
+export const createAdminProductBodyTagsItemMax = 40;
+
+export const createAdminProductBodyTagsMax = 12;
+
+export const createAdminProductBodyImageUrlMax = 2048;
+
+export const createAdminProductBodyOptionsItemNameMax = 80;
+
+export const createAdminProductBodyOptionsItemChoicesItemMax = 100;
+
+export const createAdminProductBodyOptionsItemChoicesMax = 20;
+
+export const createAdminProductBodyOptionsMax = 10;
+
+
+
+export const CreateAdminProductBody = zod.object({
+  "name": zod.string().min(1).max(createAdminProductBodyNameMax),
+  "description": zod.string().min(1).max(createAdminProductBodyDescriptionMax),
+  "category": zod.string().min(1),
+  "priceCents": zod.number().int().min(createAdminProductBodyPriceCentsMin).max(createAdminProductBodyPriceCentsMax),
+  "stock": zod.number().int().min(createAdminProductBodyStockMin).max(createAdminProductBodyStockMax),
+  "tags": zod.array(zod.string().max(createAdminProductBodyTagsItemMax)).max(createAdminProductBodyTagsMax),
+  "imageUrl": zod.string().min(1).max(createAdminProductBodyImageUrlMax),
+  "featured": zod.boolean(),
+  "options": zod.array(zod.object({
+  "name": zod.string().min(1).max(createAdminProductBodyOptionsItemNameMax),
+  "choices": zod.array(zod.string().min(1).max(createAdminProductBodyOptionsItemChoicesItemMax)).min(1).max(createAdminProductBodyOptionsItemChoicesMax),
+  "required": zod.boolean()
+})).max(createAdminProductBodyOptionsMax)
+})
+
+export const createAdminProductResponseOptionsItemNameMax = 80;
+
+export const createAdminProductResponseOptionsItemChoicesItemMax = 100;
+
+export const createAdminProductResponseOptionsItemChoicesMax = 20;
+
+
+
+export const CreateAdminProductResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "priceCents": zod.number().int(),
+  "stock": zod.number().int(),
+  "tags": zod.array(zod.string()),
+  "imageUrl": zod.string(),
+  "featured": zod.boolean(),
+  "active": zod.boolean(),
+  "options": zod.array(zod.object({
+  "name": zod.string().min(1).max(createAdminProductResponseOptionsItemNameMax),
+  "choices": zod.array(zod.string().min(1).max(createAdminProductResponseOptionsItemChoicesItemMax)).min(1).max(createAdminProductResponseOptionsItemChoicesMax),
+  "required": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Update a product
+ */
+
+
+
+export const UpdateAdminProductParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateAdminProductBodyNameMax = 120;
+
+export const updateAdminProductBodyDescriptionMax = 1000;
+
+
+export const updateAdminProductBodyPriceCentsMin = 0;
+export const updateAdminProductBodyPriceCentsMax = 1000000;
+
+export const updateAdminProductBodyStockMin = 0;
+export const updateAdminProductBodyStockMax = 100000;
+
+export const updateAdminProductBodyTagsItemMax = 40;
+
+export const updateAdminProductBodyTagsMax = 12;
+
+export const updateAdminProductBodyImageUrlMax = 2048;
+
+export const updateAdminProductBodyOptionsItemNameMax = 80;
+
+export const updateAdminProductBodyOptionsItemChoicesItemMax = 100;
+
+export const updateAdminProductBodyOptionsItemChoicesMax = 20;
+
+export const updateAdminProductBodyOptionsMax = 10;
+
+
+
+export const UpdateAdminProductBody = zod.object({
+  "name": zod.string().min(1).max(updateAdminProductBodyNameMax),
+  "description": zod.string().min(1).max(updateAdminProductBodyDescriptionMax),
+  "category": zod.string().min(1),
+  "priceCents": zod.number().int().min(updateAdminProductBodyPriceCentsMin).max(updateAdminProductBodyPriceCentsMax),
+  "stock": zod.number().int().min(updateAdminProductBodyStockMin).max(updateAdminProductBodyStockMax),
+  "tags": zod.array(zod.string().max(updateAdminProductBodyTagsItemMax)).max(updateAdminProductBodyTagsMax),
+  "imageUrl": zod.string().min(1).max(updateAdminProductBodyImageUrlMax),
+  "featured": zod.boolean(),
+  "options": zod.array(zod.object({
+  "name": zod.string().min(1).max(updateAdminProductBodyOptionsItemNameMax),
+  "choices": zod.array(zod.string().min(1).max(updateAdminProductBodyOptionsItemChoicesItemMax)).min(1).max(updateAdminProductBodyOptionsItemChoicesMax),
+  "required": zod.boolean()
+})).max(updateAdminProductBodyOptionsMax)
+})
+
+export const updateAdminProductResponseOptionsItemNameMax = 80;
+
+export const updateAdminProductResponseOptionsItemChoicesItemMax = 100;
+
+export const updateAdminProductResponseOptionsItemChoicesMax = 20;
+
+
+
+export const UpdateAdminProductResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "priceCents": zod.number().int(),
+  "stock": zod.number().int(),
+  "tags": zod.array(zod.string()),
+  "imageUrl": zod.string(),
+  "featured": zod.boolean(),
+  "active": zod.boolean(),
+  "options": zod.array(zod.object({
+  "name": zod.string().min(1).max(updateAdminProductResponseOptionsItemNameMax),
+  "choices": zod.array(zod.string().min(1).max(updateAdminProductResponseOptionsItemChoicesItemMax)).min(1).max(updateAdminProductResponseOptionsItemChoicesMax),
+  "required": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Hide a product and preserve order history
+ */
+
+
+
+export const DeleteAdminProductParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const DeleteAdminProductResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Update branding, announcement, and availability
+ */
+export const updateStoreSettingsBodyStoreNameMax = 80;
+
+export const updateStoreSettingsBodyPrimaryColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const updateStoreSettingsBodyHeroAnnouncementMax = 240;
+
+export const updateStoreSettingsBodyClosureMessageMax = 240;
+
+
+
+export const UpdateStoreSettingsBody = zod.object({
+  "storeName": zod.string().min(1).max(updateStoreSettingsBodyStoreNameMax),
+  "primaryColor": zod.string().regex(updateStoreSettingsBodyPrimaryColorRegExp),
+  "heroAnnouncement": zod.string().max(updateStoreSettingsBodyHeroAnnouncementMax),
+  "storeOpen": zod.boolean(),
+  "closureMessage": zod.string().max(updateStoreSettingsBodyClosureMessageMax)
+})
+
+export const UpdateStoreSettingsResponse = zod.object({
+  "storeName": zod.string(),
+  "primaryColor": zod.string(),
+  "heroAnnouncement": zod.string(),
+  "storeOpen": zod.boolean(),
+  "closureMessage": zod.string()
+})
+
+
+/**
+ * @summary List service areas for management
+ */
+export const ListAdminDeliveryZonesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "suburb": zod.string(),
+  "postcode": zod.string(),
+  "standardFeeCents": zod.number().int(),
+  "expressFeeCents": zod.number().int(),
+  "minimumOrderCents": zod.number().int(),
+  "pickupAvailable": zod.boolean()
+})
+export const ListAdminDeliveryZonesResponse = zod.array(ListAdminDeliveryZonesResponseItem)
+
+
+/**
+ * @summary Add a delivery suburb
+ */
+export const createAdminDeliveryZoneBodySuburbMax = 100;
+
+export const createAdminDeliveryZoneBodyPostcodeRegExp = new RegExp('^[0-9]{4}$');
+export const createAdminDeliveryZoneBodyStandardFeeCentsMin = 0;
+export const createAdminDeliveryZoneBodyStandardFeeCentsMax = 100000;
+
+export const createAdminDeliveryZoneBodyExpressFeeCentsMin = 0;
+export const createAdminDeliveryZoneBodyExpressFeeCentsMax = 100000;
+
+export const createAdminDeliveryZoneBodyMinimumOrderCentsMin = 0;
+export const createAdminDeliveryZoneBodyMinimumOrderCentsMax = 1000000;
+
+
+
+export const CreateAdminDeliveryZoneBody = zod.object({
+  "suburb": zod.string().min(1).max(createAdminDeliveryZoneBodySuburbMax),
+  "postcode": zod.string().regex(createAdminDeliveryZoneBodyPostcodeRegExp),
+  "standardFeeCents": zod.number().int().min(createAdminDeliveryZoneBodyStandardFeeCentsMin).max(createAdminDeliveryZoneBodyStandardFeeCentsMax),
+  "expressFeeCents": zod.number().int().min(createAdminDeliveryZoneBodyExpressFeeCentsMin).max(createAdminDeliveryZoneBodyExpressFeeCentsMax),
+  "minimumOrderCents": zod.number().int().min(createAdminDeliveryZoneBodyMinimumOrderCentsMin).max(createAdminDeliveryZoneBodyMinimumOrderCentsMax),
+  "pickupAvailable": zod.boolean()
+})
+
+export const CreateAdminDeliveryZoneResponse = zod.object({
+  "id": zod.number().int(),
+  "suburb": zod.string(),
+  "postcode": zod.string(),
+  "standardFeeCents": zod.number().int(),
+  "expressFeeCents": zod.number().int(),
+  "minimumOrderCents": zod.number().int(),
+  "pickupAvailable": zod.boolean()
+})
+
+
+/**
+ * @summary Update a delivery suburb
+ */
+
+
+
+export const UpdateAdminDeliveryZoneParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateAdminDeliveryZoneBodySuburbMax = 100;
+
+export const updateAdminDeliveryZoneBodyPostcodeRegExp = new RegExp('^[0-9]{4}$');
+export const updateAdminDeliveryZoneBodyStandardFeeCentsMin = 0;
+export const updateAdminDeliveryZoneBodyStandardFeeCentsMax = 100000;
+
+export const updateAdminDeliveryZoneBodyExpressFeeCentsMin = 0;
+export const updateAdminDeliveryZoneBodyExpressFeeCentsMax = 100000;
+
+export const updateAdminDeliveryZoneBodyMinimumOrderCentsMin = 0;
+export const updateAdminDeliveryZoneBodyMinimumOrderCentsMax = 1000000;
+
+
+
+export const UpdateAdminDeliveryZoneBody = zod.object({
+  "suburb": zod.string().min(1).max(updateAdminDeliveryZoneBodySuburbMax),
+  "postcode": zod.string().regex(updateAdminDeliveryZoneBodyPostcodeRegExp),
+  "standardFeeCents": zod.number().int().min(updateAdminDeliveryZoneBodyStandardFeeCentsMin).max(updateAdminDeliveryZoneBodyStandardFeeCentsMax),
+  "expressFeeCents": zod.number().int().min(updateAdminDeliveryZoneBodyExpressFeeCentsMin).max(updateAdminDeliveryZoneBodyExpressFeeCentsMax),
+  "minimumOrderCents": zod.number().int().min(updateAdminDeliveryZoneBodyMinimumOrderCentsMin).max(updateAdminDeliveryZoneBodyMinimumOrderCentsMax),
+  "pickupAvailable": zod.boolean()
+})
+
+export const UpdateAdminDeliveryZoneResponse = zod.object({
+  "id": zod.number().int(),
+  "suburb": zod.string(),
+  "postcode": zod.string(),
+  "standardFeeCents": zod.number().int(),
+  "expressFeeCents": zod.number().int(),
+  "minimumOrderCents": zod.number().int(),
+  "pickupAvailable": zod.boolean()
+})
+
+
+/**
+ * @summary Remove a delivery suburb
+ */
+
+
+
+export const DeleteAdminDeliveryZoneParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const DeleteAdminDeliveryZoneResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary List kitchen orders with optional suburb and date filters
+ */
+export const ListAdminOrdersQueryParams = zod.object({
+  "suburb": zod.coerce.string().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional()
+})
+
+export const ListAdminOrdersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "orderNumber": zod.string(),
+  "customerName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "suburb": zod.string(),
+  "streetAddress": zod.string(),
+  "fulfillment": zod.enum(['delivery', 'pickup']),
+  "speed": zod.enum(['standard', 'express']),
+  "status": zod.enum(['received', 'baking', 'ready_for_courier', 'out_for_delivery', 'delivered']),
+  "items": zod.array(zod.object({
+  "cookieId": zod.number().int(),
+  "name": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "selections": zod.array(zod.object({
+  "name": zod.string(),
+  "value": zod.string()
+}))
+})),
+  "subtotalCents": zod.number().int(),
+  "gstCents": zod.number().int(),
+  "deliveryFeeCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "giftNote": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAdminOrdersResponse = zod.array(ListAdminOrdersResponseItem)
+
+
+/**
+ * @summary Advance an order status
+ */
+
+
+
+export const UpdateAdminOrderStatusParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const UpdateAdminOrderStatusBody = zod.object({
+  "status": zod.enum(['received', 'baking', 'ready_for_courier', 'out_for_delivery', 'delivered'])
+})
+
+export const UpdateAdminOrderStatusResponse = zod.object({
+  "id": zod.number().int(),
+  "orderNumber": zod.string(),
+  "customerName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "suburb": zod.string(),
+  "streetAddress": zod.string(),
+  "fulfillment": zod.enum(['delivery', 'pickup']),
+  "speed": zod.enum(['standard', 'express']),
+  "status": zod.enum(['received', 'baking', 'ready_for_courier', 'out_for_delivery', 'delivered']),
+  "items": zod.array(zod.object({
+  "cookieId": zod.number().int(),
+  "name": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "selections": zod.array(zod.object({
+  "name": zod.string(),
+  "value": zod.string()
+}))
+})),
+  "subtotalCents": zod.number().int(),
+  "gstCents": zod.number().int(),
+  "deliveryFeeCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "giftNote": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Request a protected image upload URL
+ */
+export const requestUploadUrlBodyNameMax = 255;
+
+export const requestUploadUrlBodySizeMax = 8388608;
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1).max(requestUploadUrlBodyNameMax),
+  "size": zod.number().int().min(1).max(requestUploadUrlBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Make a completed product image public
+ */
+
+
+
+export const CompleteProductImageUploadBody = zod.object({
+  "objectPath": zod.string().min(1)
+})
+
+export const CompleteProductImageUploadResponse = zod.object({
+  "imageUrl": zod.string()
+})
+
+
+/**
+ * @summary Get the signed-in identity used for protected uploads
+ */
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().email().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start browser login
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+export const BeginBrowserLoginResponse = zod.void()
+
+
+/**
+ * @summary Finish browser login
+ */
+export const HandleBrowserLoginCallbackResponse = zod.void()
+
+
+/**
+ * @summary End browser login
+ */
+export const LogoutBrowserSessionQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+export const LogoutBrowserSessionResponse = zod.void()
 
 

@@ -21,12 +21,226 @@ export interface Cookie {
   featured: boolean;
 }
 
+export interface ProductOption {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  choices: string[];
+  required: boolean;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  priceCents: number;
+  stock: number;
+  tags: string[];
+  imageUrl: string;
+  featured: boolean;
+  active: boolean;
+  options: ProductOption[];
+}
+
+export interface ProductInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  description: string;
+  /** @minLength 1 */
+  category: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  priceCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  stock: number;
+  /**
+     * @maxItems 12
+     * @items.maxLength 40
+     */
+  tags: string[];
+  /**
+     * @minLength 1
+     * @maxLength 2048
+     */
+  imageUrl: string;
+  featured: boolean;
+  /** @maxItems 10 */
+  options: ProductOption[];
+}
+
+export interface ProductCategory {
+  id: number;
+  slug: string;
+  name: string;
+}
+
+export interface StoreSettings {
+  storeName: string;
+  primaryColor: string;
+  heroAnnouncement: string;
+  storeOpen: boolean;
+  closureMessage: string;
+}
+
+export interface StoreSettingsInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  storeName: string;
+  /** @pattern ^#[0-9A-Fa-f]{6}$ */
+  primaryColor: string;
+  /** @maxLength 240 */
+  heroAnnouncement: string;
+  storeOpen: boolean;
+  /** @maxLength 240 */
+  closureMessage: string;
+}
+
+export interface AdminLoginInput {
+  /**
+     * @minLength 1
+     * @maxLength 256
+     */
+  accessCode: string;
+}
+
+export interface AdminSession {
+  authenticated: boolean;
+}
+
+export interface AdminMutationResult {
+  success: boolean;
+}
+
+export interface DeliveryZoneInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  suburb: string;
+  /** @pattern ^[0-9]{4}$ */
+  postcode: string;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  standardFeeCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  expressFeeCents: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  minimumOrderCents: number;
+  pickupAvailable: boolean;
+}
+
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
+
+
+export const OrderStatus = {
+  received: 'received',
+  baking: 'baking',
+  ready_for_courier: 'ready_for_courier',
+  out_for_delivery: 'out_for_delivery',
+  delivered: 'delivered',
+} as const;
+
+export interface OrderStatusInput {
+  status: OrderStatus;
+}
+
+export interface OrderItemSelection {
+  name: string;
+  value: string;
+}
+
+export type UploadUrlRequestContentType = typeof UploadUrlRequestContentType[keyof typeof UploadUrlRequestContentType];
+
+
+export const UploadUrlRequestContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface UploadUrlRequest {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 8388608
+     */
+  size: number;
+  contentType: UploadUrlRequestContentType;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface CompleteUploadInput {
+  /** @minLength 1 */
+  objectPath: string;
+}
+
+export interface CompleteUploadResponse {
+  imageUrl: string;
+}
+
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
 export interface DeliveryZone {
   id: number;
   suburb: string;
   postcode: string;
   standardFeeCents: number;
   expressFeeCents: number;
+  minimumOrderCents: number;
   pickupAvailable: boolean;
 }
 
@@ -41,6 +255,8 @@ export interface OrderItemInput {
   cookieId: number;
   /** @minimum 1 */
   quantity: number;
+  /** @maxItems 10 */
+  selections?: OrderItemSelection[];
 }
 
 export type OrderInputFulfillment = typeof OrderInputFulfillment[keyof typeof OrderInputFulfillment];
@@ -95,6 +311,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   unitPriceCents: number;
+  selections: OrderItemSelection[];
 }
 
 export type OrderFulfillment = typeof OrderFulfillment[keyof typeof OrderFulfillment];
@@ -113,16 +330,6 @@ export const OrderSpeed = {
   express: 'express',
 } as const;
 
-export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
-
-
-export const OrderStatus = {
-  received: 'received',
-  baking: 'baking',
-  out_for_delivery: 'out_for_delivery',
-  delivered: 'delivered',
-} as const;
-
 export interface Order {
   id: number;
   orderNumber: string;
@@ -130,6 +337,7 @@ export interface Order {
   email: string;
   phone: string;
   suburb: string;
+  streetAddress: string;
   fulfillment: OrderFulfillment;
   speed: OrderSpeed;
   status: OrderStatus;
@@ -146,10 +354,28 @@ export interface Error {
   error: string;
 }
 
+export type ListProductsParams = {
+category?: string;
+};
+
 export type CheckDeliveryZoneParams = {
 /**
  * @minLength 1
  */
 suburb: string;
+};
+
+export type ListAdminOrdersParams = {
+suburb?: string;
+from?: string;
+to?: string;
+};
+
+export type BeginBrowserLoginParams = {
+returnTo?: string;
+};
+
+export type LogoutBrowserSessionParams = {
+returnTo?: string;
 };
 

@@ -12,6 +12,7 @@ export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 export const OrderStatus = {
   received: 'received',
   baking: 'baking',
+  ready_for_courier: 'ready_for_courier',
   out_for_delivery: 'out_for_delivery',
   delivered: 'delivered',
 } as const;

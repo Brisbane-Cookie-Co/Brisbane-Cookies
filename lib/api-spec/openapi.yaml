@@ -16,6 +16,14 @@ tags:
     description: Brisbane service zones
   - name: orders
     description: Checkout and order tracking
+  - name: products
+    description: Public product catalog
+  - name: admin
+    description: Protected store management
+  - name: auth
+    description: Replit identity for protected uploads
+  - name: storage
+    description: Product image uploads
 paths:
   /healthz:
     get:
@@ -44,6 +52,48 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Cookie"
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List active products, optionally filtered by category
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Active products
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+  /categories:
+    get:
+      operationId: listProductCategories
+      tags: [products]
+      summary: List available product categories
+      responses:
+        "200":
+          description: Product categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProductCategory" }
+  /settings:
+    get:
+      operationId: getStoreSettings
+      tags: [products]
+      summary: Get public store branding and availability
+      responses:
+        "200":
+          description: Current store settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreSettings" }
   /delivery-zones:
     get:
       operationId: listDeliveryZones
@@ -107,6 +157,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "409":
+          description: Store is closed or the minimum order has not been met
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /orders/{orderNumber}:
     get:
       operationId: getOrder
@@ -131,6 +187,408 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /admin/session:
+    get:
+      operationId: getAdminSession
+      tags: [admin]
+      summary: Check the admin session
+      responses:
+        "200":
+          description: Authentication state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSession" }
+  /admin/login:
+    post:
+      operationId: loginAdmin
+      tags: [admin]
+      summary: Verify the admin access code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminLoginInput" }
+      responses:
+        "200":
+          description: Admin session opened
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSession" }
+        "401":
+          description: Access code is incorrect
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429":
+          description: Too many attempts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /admin/logout:
+    post:
+      operationId: logoutAdmin
+      tags: [admin]
+      summary: End the current admin session
+      responses:
+        "200":
+          description: Session ended
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSession" }
+  /admin/products:
+    get:
+      operationId: listAdminProducts
+      tags: [admin]
+      summary: List all products, including hidden ones
+      responses:
+        "200":
+          description: Inventory
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+    post:
+      operationId: createAdminProduct
+      tags: [admin]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductInput" }
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+  /admin/products/{id}:
+    patch:
+      operationId: updateAdminProduct
+      tags: [admin]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductInput" }
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      operationId: deleteAdminProduct
+      tags: [admin]
+      summary: Hide a product and preserve order history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Product hidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminMutationResult" }
+  /admin/categories:
+    get:
+      operationId: listAdminCategories
+      tags: [admin]
+      summary: List product categories
+      responses:
+        "200":
+          description: Product categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProductCategory" }
+    post:
+      operationId: createAdminCategory
+      tags: [admin]
+      summary: Create a product category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "201":
+          description: Product category created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCategory" }
+  /admin/categories/{id}:
+    patch:
+      operationId: updateAdminCategory
+      tags: [admin]
+      summary: Rename a product category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "200":
+          description: Product category updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCategory" }
+        "404":
+          description: Product category not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      operationId: deleteAdminCategory
+      tags: [admin]
+      summary: Remove an unused product category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Product category removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminMutationResult" }
+        "409":
+          description: Category is still used by products
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /admin/settings:
+    put:
+      operationId: updateStoreSettings
+      tags: [admin]
+      summary: Update branding, announcement, and availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StoreSettingsInput" }
+      responses:
+        "200":
+          description: Settings saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreSettings" }
+  /admin/delivery-zones:
+    get:
+      operationId: listAdminDeliveryZones
+      tags: [admin]
+      summary: List service areas for management
+      responses:
+        "200":
+          description: Delivery zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DeliveryZone" }
+    post:
+      operationId: createAdminDeliveryZone
+      tags: [admin]
+      summary: Add a delivery suburb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeliveryZoneInput" }
+      responses:
+        "201":
+          description: Delivery zone created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeliveryZone" }
+  /admin/delivery-zones/{id}:
+    patch:
+      operationId: updateAdminDeliveryZone
+      tags: [admin]
+      summary: Update a delivery suburb
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeliveryZoneInput" }
+      responses:
+        "200":
+          description: Delivery zone updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeliveryZone" }
+        "404":
+          description: Delivery zone not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      operationId: deleteAdminDeliveryZone
+      tags: [admin]
+      summary: Remove a delivery suburb
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Delivery zone removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminMutationResult" }
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin]
+      summary: List kitchen orders with optional suburb and date filters
+      parameters:
+        - name: suburb
+          in: query
+          required: false
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Order" }
+  /admin/orders/{id}/status:
+    patch:
+      operationId: updateAdminOrderStatus
+      tags: [admin]
+      summary: Advance an order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderStatusInput" }
+      responses:
+        "200":
+          description: Order updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a protected image upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadUrlRequest" }
+      responses:
+        "200":
+          description: Presigned URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadUrlResponse" }
+  /storage/uploads/complete:
+    post:
+      operationId: completeProductImageUpload
+      tags: [storage]
+      summary: Make a completed product image public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompleteUploadInput" }
+      responses:
+        "200":
+          description: Public product-image path
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CompleteUploadResponse" }
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      tags: [auth]
+      summary: Get the signed-in identity used for protected uploads
+      responses:
+        "200":
+          description: Authentication state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthUserEnvelope" }
+  /login:
+    get:
+      operationId: beginBrowserLogin
+      tags: [auth]
+      summary: Start browser login
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect to identity provider }
+  /callback:
+    get:
+      operationId: handleBrowserLoginCallback
+      tags: [auth]
+      summary: Finish browser login
+      responses:
+        "302": { description: Redirect back to the app }
+  /logout:
+    get:
+      operationId: logoutBrowserSession
+      tags: [auth]
+      summary: End browser login
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect after logout }
 components:
   schemas:
     HealthStatus:
@@ -155,15 +613,175 @@ components:
           items: { type: string }
         imageUrl: { type: string }
         featured: { type: boolean }
+    ProductOption:
+      type: object
+      required: [name, choices, required]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        choices:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string, minLength: 1, maxLength: 100 }
+        required: { type: boolean }
+    Product:
+      type: object
+      required: [id, name, slug, description, category, priceCents, stock, tags, imageUrl, featured, active, options]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        category: { type: string }
+        priceCents: { type: integer }
+        stock: { type: integer }
+        tags:
+          type: array
+          items: { type: string }
+        imageUrl: { type: string }
+        featured: { type: boolean }
+        active: { type: boolean }
+        options:
+          type: array
+          items: { $ref: "#/components/schemas/ProductOption" }
+    ProductInput:
+      type: object
+      required: [name, description, category, priceCents, stock, tags, imageUrl, featured, options]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, minLength: 1, maxLength: 1000 }
+        category: { type: string, minLength: 1 }
+        priceCents: { type: integer, minimum: 0, maximum: 1000000 }
+        stock: { type: integer, minimum: 0, maximum: 100000 }
+        tags:
+          type: array
+          maxItems: 12
+          items: { type: string, maxLength: 40 }
+        imageUrl: { type: string, minLength: 1, maxLength: 2048 }
+        featured: { type: boolean }
+        options:
+          type: array
+          maxItems: 10
+          items: { $ref: "#/components/schemas/ProductOption" }
+    ProductCategory:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+    StoreSettings:
+      type: object
+      required: [storeName, primaryColor, heroAnnouncement, storeOpen, closureMessage]
+      properties:
+        storeName: { type: string }
+        primaryColor: { type: string }
+        heroAnnouncement: { type: string }
+        storeOpen: { type: boolean }
+        closureMessage: { type: string }
+    StoreSettingsInput:
+      type: object
+      required: [storeName, primaryColor, heroAnnouncement, storeOpen, closureMessage]
+      properties:
+        storeName: { type: string, minLength: 1, maxLength: 80 }
+        primaryColor: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+        heroAnnouncement: { type: string, maxLength: 240 }
+        storeOpen: { type: boolean }
+        closureMessage: { type: string, maxLength: 240 }
+    AdminLoginInput:
+      type: object
+      required: [accessCode]
+      properties:
+        accessCode: { type: string, minLength: 1, maxLength: 256 }
+    AdminSession:
+      type: object
+      required: [authenticated]
+      properties:
+        authenticated: { type: boolean }
+    AdminMutationResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+    DeliveryZoneInput:
+      type: object
+      required: [suburb, postcode, standardFeeCents, expressFeeCents, minimumOrderCents, pickupAvailable]
+      properties:
+        suburb: { type: string, minLength: 1, maxLength: 100 }
+        postcode: { type: string, pattern: "^[0-9]{4}$" }
+        standardFeeCents: { type: integer, minimum: 0, maximum: 100000 }
+        expressFeeCents: { type: integer, minimum: 0, maximum: 100000 }
+        minimumOrderCents: { type: integer, minimum: 0, maximum: 1000000 }
+        pickupAvailable: { type: boolean }
+    OrderStatus:
+      type: string
+      enum: [received, baking, ready_for_courier, out_for_delivery, delivered]
+    OrderStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/OrderStatus" }
+    OrderItemSelection:
+      type: object
+      required: [name, value]
+      properties:
+        name: { type: string }
+        value: { type: string }
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 8388608 }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+    CompleteUploadInput:
+      type: object
+      required: [objectPath]
+      properties:
+        objectPath: { type: string, minLength: 1 }
+    CompleteUploadResponse:
+      type: object
+      required: [imageUrl]
+      properties:
+        imageUrl: { type: string }
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id: { type: string }
+        email: { type: ["string", "null"], format: email }
+        firstName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        profileImageUrl: { type: ["string", "null"] }
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          anyOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
     DeliveryZone:
       type: object
-      required: [id, suburb, postcode, standardFeeCents, expressFeeCents, pickupAvailable]
+      required: [id, suburb, postcode, standardFeeCents, expressFeeCents, minimumOrderCents, pickupAvailable]
       properties:
         id: { type: integer }
         suburb: { type: string }
         postcode: { type: string }
         standardFeeCents: { type: integer }
         expressFeeCents: { type: integer }
+        minimumOrderCents: { type: integer }
         pickupAvailable: { type: boolean }
     DeliveryCheck:
       type: object
@@ -181,6 +799,10 @@ components:
       properties:
         cookieId: { type: integer }
         quantity: { type: integer, minimum: 1 }
+        selections:
+          type: array
+          maxItems: 10
+          items: { $ref: "#/components/schemas/OrderItemSelection" }
     OrderInput:
       type: object
       required: [customerName, email, phone, suburb, fulfillment, items]
@@ -208,15 +830,18 @@ components:
             $ref: "#/components/schemas/OrderItemInput"
     OrderItem:
       type: object
-      required: [cookieId, name, quantity, unitPriceCents]
+      required: [cookieId, name, quantity, unitPriceCents, selections]
       properties:
         cookieId: { type: integer }
         name: { type: string }
         quantity: { type: integer }
         unitPriceCents: { type: integer }
+        selections:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItemSelection" }
     Order:
       type: object
-      required: [id, orderNumber, customerName, email, phone, suburb, fulfillment, speed, status, items, subtotalCents, gstCents, deliveryFeeCents, totalCents, giftNote, createdAt]
+      required: [id, orderNumber, customerName, email, phone, suburb, streetAddress, fulfillment, speed, status, boxSize, items, subtotalCents, gstCents, deliveryFeeCents, totalCents, giftNote, createdAt]
       properties:
         id: { type: integer }
         orderNumber: { type: string }
@@ -224,9 +849,13 @@ components:
         email: { type: string }
         phone: { type: string }
         suburb: { type: string }
+        streetAddress: { type: string }
         fulfillment: { type: string, enum: [delivery, pickup] }
         speed: { type: string, enum: [standard, express] }
-        status: { type: string, enum: [received, baking, out_for_delivery, delivered] }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        boxSize:
+          type: ["integer", "null"]
+          enum: [4, 6, 12, null]
         items:
           type: array
           items:

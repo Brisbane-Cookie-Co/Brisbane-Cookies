@@ -8,6 +8,7 @@ export const deliveryZonesTable = pgTable("delivery_zones", {
   postcode: text("postcode").notNull(),
   standardFeeCents: integer("standard_fee_cents").notNull(),
   expressFeeCents: integer("express_fee_cents").notNull(),
+  minimumOrderCents: integer("minimum_order_cents").notNull().default(0),
   pickupAvailable: boolean("pickup_available").notNull().default(true),
 });
 

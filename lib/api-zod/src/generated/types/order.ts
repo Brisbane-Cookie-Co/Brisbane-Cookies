@@ -17,6 +17,7 @@ export interface Order {
   email: string;
   phone: string;
   suburb: string;
+  streetAddress: string;
   fulfillment: OrderFulfillment;
   speed: OrderSpeed;
   status: OrderStatus;
