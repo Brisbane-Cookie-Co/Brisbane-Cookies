@@ -1,0 +1,43 @@
+"Please add a complete, secure, hidden Admin Console and dynamic backend management system to our Brisbane Cookie & Cake App with the following detailed specifications:
+1. Hidden Gesture Access & Security
+Trigger Gesture: On the main header/navbar, if an user clicks and holds (or long-presses on mobile) the top-left app logo for continuous 5 seconds:
+Display a subtle visual feedback animation (e.g., logo gently pulsing or a soft glowing ring progress indicator around the logo showing the hold countdown).
+After 5 seconds, trigger a modal overlay prompting for an Admin Access Code / Password.
+Authentication:
+Prompt for an Admin PIN or Password (default initial pass code set in environment variables/config, e.g., admin123).
+On correct password entry, grant access to the Admin Dashboard (persist session in state/session storage until explicitly logged out or closed).
+Include a quick 'Exit Admin Mode' button at top of dashboard to easily return to customer view.
+2. App Branding & Store Settings Management
+The admin should be able to configure global store details dynamically, stored in the database:
+App Name & Branding:
+Input field to change the App Name (updates navbar title, document head, footer, and checkout text immediately).
+Primary brand color picker or theme selector.
+Tagline / Hero announcement banner message editor (e.g., "Freshly baked in West End today!").
+Delivery & Suburb Controls:
+Add, edit, or remove delivery suburbs around Brisbane with custom delivery fee rates ($) and minimum order amounts.
+Toggle store status: 'Open for Orders' vs 'Kitchen Closed / Sold Out for Today'.
+3. Comprehensive Product Management (Cookies & Cakes)
+An interactive inventory tab inside the admin console allowing full CRUD (Create, Read, Update, Delete) operations on store products:
+Product Categorization & Types:
+Capability to organize products into categories: Cookies, Cakes, Dessert Boxes, and Beverages/Add-ons.
+Product Details Editor:
+Product Name & Description (e.g., 'Giant Macadamia Brownie Cake', 'Dark Choc Sea Salt Cookie').
+Category Selector (Cookie vs. Cake vs. Gift Box).
+Price in AUD ($).
+Stock Quantity Counter (Auto-decrement on orders, or manual toggle for 'Sold Out').
+Dietary & Allergy Tags: Multi-select checkboxes for Gluten-Free, Vegan, Nut-Free, Halal, Dairy-Free, Bestseller, Limited Edition.
+Custom Image Upload & URL Support:
+Option A (Self Upload): Image file uploader supporting local storage or blob storage for uploading custom photos directly from the admin's device.
+Option B (Image URL): Input field to paste any external web image link with live preview before saving.
+Product Options & Customizations:
+Add custom options per product (e.g., for Cakes: choose size 6 inch / 8 inch, write custom message on cake, select ribbon color; for Cookies: warmth preference, extra dips/sauces).
+4. Order Management & Live Dispatch
+Live Orders Dashboard:
+View all customer orders in real-time grouped by status: New ➔ In the Oven ➔ Ready for Courier ➔ Out for Delivery ➔ Completed.
+One-click buttons for admin/kitchen staff to advance order status (which instantly updates customer order tracking page).
+Filter orders by Brisbane Suburb or Delivery Date/Time window.
+Print or view order receipt summaries for kitchen packing.
+5. Technical Implementation Guidance
+Database Schema Updates: Update database tables (settings, products, categories, orders) using ORM/SQL to store app configurations, product category flags (is_cookie, is_cake), and custom option arrays.
+State Management: Ensure front-end state reactively updates the main menu, branding titles, and product lists immediately whenever changed in the admin panel.
+Please generate all required components, API endpoints (/api/admin/*, /api/products), update database migrations/schemas, and ensure smooth touch/click hold interaction hooks on the logo component.
